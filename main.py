@@ -47,13 +47,16 @@ def clean_zip_code(zip_code):
 
 
 def read_zip_codes_from_csv(file_path):
-    zip_codes = []
+    locations = []
     with open(file_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            zip_code = row['Zip'].strip()
-            zip_codes.append(clean_zip_code(zip_code))
-    return zip_codes
+            address = {
+                "full_address": f"{row['Address']}, {row['City']}, {row['State']}",
+                "zip_code": clean_zip_code(row['Zip'].strip())
+            }
+            locations.append(address)
+    return locations
 
 
 def calculate_distance(coords1, coords2):
@@ -72,22 +75,22 @@ def main():
 
     if home_coordinates:
         distances = []
-        # Change here: Read zip codes from CSV instead of predefined list
-        mcplant_zip_codes = read_zip_codes_from_csv("mcplant_locations_feb_2024.csv")
-        for zip_code in mcplant_zip_codes:
+        mcplant_locations = read_zip_codes_from_csv("mcplant_locations_feb_2024.csv")
+        for location in mcplant_locations:
+            zip_code = location["zip_code"]
+            full_address = location["full_address"]
             coordinates = get_coordinates(zip_code, cache=zip_code_cache)
             if coordinates:
                 distance = calculate_distance(home_coordinates, coordinates)
                 if distance is not None:
-                    distances.append((distance, zip_code, coordinates[2]))
+                    distances.append((distance, full_address, coordinates[2]))
 
         distances.sort(key=lambda x: x[0])
-        print(f"Top 3 closest locations to {home_zip_code}:")
-        for i, (distance, zip_code, location) in enumerate(distances[:3], 1):
-            print(f"{i}. {zip_code} ({location}) - Distance: {distance:.2f} miles")
+        print(f"Top 3 closest McDonalds locations offering the McPlant to {home_zip_code}:")
+        for i, (distance, full_address, _) in enumerate(distances[:3], 1):
+            print(f"{i}. {full_address} - Distance: {distance:.2f} miles")
 
     save_cache(zip_code_cache)
-
 
 if __name__ == "__main__":
     main()
