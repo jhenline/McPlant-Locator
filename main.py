@@ -4,9 +4,8 @@ from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
-# Path to cache file used for faster performance after initial run
+# Path to cache file
 cache_file_path = 'zip_code_cache.json'
-
 
 # Load or initialize cache
 def load_cache():
@@ -23,22 +22,43 @@ def save_cache(cache):
         json.dump(cache, cache_file)
 
 
-# Initialize geolocator once
+# Initialize geolocator
 geolocator = Nominatim(user_agent="zip_code_locator")
 
 
+# Get the coordinates (latitude and longitude) and address
+# for a given zip code. The country defaults to "USA" if not specified.
 def get_coordinates(zip_code, country="USA", cache=None):
+    # If no cache dictionary is provided, initialize an empty one.
+    # This is used to store and retrieve results for zip codes that have already been queried.
     if cache is None:
         cache = {}
+
+    # Check if the zip code is already in the cache.
+    # If it is, return the cached result immediately without performing a new lookup.
     if zip_code in cache:
         return cache[zip_code]
+
+    # Attempt to retrieve the location information for the given zip code and country.
     try:
+        # Use the geolocator's geocode method to fetch the location data.
+        # The addressdetails=True parameter requests additional address information.
         location = geolocator.geocode(f"{zip_code}, {country}", addressdetails=True)
+
+        # Check if a location was successfully retrieved.
         if location:
+            # If a location is found, store its latitude, longitude, and address
+            # in the cache dictionary using the zip code as the key.
             cache[zip_code] = (location.latitude, location.longitude, location.address)
+            # Return the location data.
             return cache[zip_code]
+    # Catch specific exceptions related to geolocation service timeouts or errors.
     except (GeocoderTimedOut, GeocoderServiceError):
+        # If an exception occurs, do nothing (pass) and proceed to return None values.
         pass
+
+    # If the location could not be retrieved (either because of an exception or because
+    # the location is not found), return None for latitude, longitude, and address.
     return None, None, None
 
 
